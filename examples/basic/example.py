@@ -10,10 +10,17 @@ if os.getenv("REDIS") == "1":
     broker = RedisBroker()
     dramatiq.set_broker(broker)
 
+from dramatiq.middleware import CurrentMessage
 
-@dramatiq.actor
+dramatiq.get_broker().add_middleware(CurrentMessage())
+
+@dramatiq.actor(max_retries=5, throws=(ValueError,))
 def add(x, y):
+    print(">>> {}".format(CurrentMessage.get_current_message()))
     add.logger.info("The sum of %d and %d is %d.", x, y, x + y)
+    if ( x + y ) % 2:
+        # dramatiq.get_broker().enqueue(CurrentMessage.get_current_message())
+        raise ValueError('odd number!')
 
 
 def main(args):
